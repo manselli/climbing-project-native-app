@@ -1,7 +1,8 @@
-import { Text, View } from "react-native"
+import { StyleSheet, Text, View } from "react-native";
 
 
 const GuidePage = () => {
+
     return (
         <View>
             <Text>GUIDE PAGE COMPONENT</Text>
@@ -10,3 +11,10 @@ const GuidePage = () => {
 }
 
 export default GuidePage
+
+
+const styles = StyleSheet.create({
+    listText: {
+        color: 'black'
+    }
+});

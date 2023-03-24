@@ -1,9 +1,42 @@
 import { Dimensions, StyleSheet, Text, View } from "react-native";
 
-import React from 'react';
-import MapView from 'react-native-maps';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import Geolocation from '@react-native-community/geolocation';
+import axios from "axios";
+import React, { useEffect, useState } from 'react';
+import MapView, { Marker } from 'react-native-maps';
+import { serverUrl } from "../../App";
+
+
 
 function Map() {
+    const geo = Geolocation.toString()
+    console.log(geo)
+    const [mapData, setMapData] = useState<CragsData[]>([])
+    useEffect(() => {
+        console.log('loading data')
+        loadMapData()
+
+    }, [])
+
+    const loadMapData = async () => {
+        try {
+            const data = await AsyncStorage.getItem('mapData')
+            if (data === null) {
+                console.log('fetching data from server')
+                const response = (await axios.get(`${serverUrl}/crags/maps`)).data as any as object[] as CragsData[]
+                await AsyncStorage.setItem('mapData', JSON.stringify(response))
+                setMapData(response)
+            } else {
+                console.log('data found locally')
+                setMapData(JSON.parse(data) as CragsData[])
+            }
+        }
+        catch (err) {
+            console.log(err)
+        }
+
+    }
 
 
     const region = {
@@ -12,6 +45,7 @@ function Map() {
         latitudeDelta: 5,
         longitudeDelta: 3
     };
+    console.log(`mapdata length: ${mapData.length}`)
 
     return (
         <View style={styles.container}>
@@ -19,7 +53,19 @@ function Map() {
                 style={styles.map}
                 initialRegion={region}
                 scrollEnabled={true}
-            />
+            >
+                {mapData.map(elm => {
+                    console.log(`showing ${elm.cragName}`)
+                    return (
+                        <Marker
+                            title={elm.cragName}
+                            coordinate={{ latitude: elm.position.lat, longitude: elm.position.lon }}
+                            key={elm._id}>
+
+                        </Marker>
+                    )
+                })}
+            </MapView>
         </View >
     );
 }
@@ -55,6 +101,21 @@ const styles = StyleSheet.create({
     },
 });
 
+
+type CragsData = {
+    _id: string,
+    cragName: string,
+    regionId: string,
+    position: {
+        lat: number,
+        lon: number
+    },
+    geo: {
+        type: string,
+        coordinates: number[]
+    }
+    description?: string
+}
 
 
 
