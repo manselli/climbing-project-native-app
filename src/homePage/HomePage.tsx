@@ -1,21 +1,21 @@
-import { Dimensions, StyleSheet, Text, View } from "react-native";
-
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import Geolocation from '@react-native-community/geolocation';
 import axios from "axios";
+import * as Location from 'expo-location';
 import React, { useEffect, useState } from 'react';
+import { Dimensions, Image, StyleSheet, Switch, Text, View } from "react-native";
 import MapView, { Marker } from 'react-native-maps';
 import { serverUrl } from "../../App";
 
 
 
 function Map() {
-    const geo = Geolocation.toString()
-    console.log(geo)
+    const [location, setLocation] = useState<number[]>([])
     const [mapData, setMapData] = useState<CragsData[]>([])
+    const [showCragMarker, setShowCragMarker] = useState(true)
     useEffect(() => {
         console.log('loading data')
         loadMapData()
+        getLocation()
 
     }, [])
 
@@ -38,6 +38,17 @@ function Map() {
 
     }
 
+    const getLocation = async () => {
+        const { status } = await Location.requestForegroundPermissionsAsync()
+        if (status !== 'granted') {
+            console.log('Please grant location permission')
+        } else {
+            const pos = await Location.getCurrentPositionAsync()
+            console.log(pos)
+            setLocation([pos.coords.latitude, pos.coords.longitude])
+        }
+    }
+
 
     const region = {
         latitude: 43.11,
@@ -49,13 +60,21 @@ function Map() {
 
     return (
         <View style={styles.container}>
+            <Text>Show Crags:</Text>
+            <Switch
+                trackColor={{ false: '#767577', true: '#81b0ff' }}
+                thumbColor={showCragMarker ? '#089ba6' : '#f4f3f4'}
+                ios_backgroundColor="#3e3e3e"
+                onValueChange={ev => setShowCragMarker(!showCragMarker)}
+                value={showCragMarker}
+            />
             <MapView
                 style={styles.map}
                 initialRegion={region}
                 scrollEnabled={true}
             >
-                {mapData.map(elm => {
-                    console.log(`showing ${elm.cragName}`)
+                {showCragMarker ? mapData.map(elm => {
+                    // console.log(`showing ${elm.cragName}`)
                     return (
                         <Marker
                             title={elm.cragName}
@@ -64,7 +83,13 @@ function Map() {
 
                         </Marker>
                     )
-                })}
+                }) : <></>}
+                {location.length > 0 ?
+                    <Marker
+                        title="user Location"
+                        coordinate={{ latitude: location[0], longitude: location[1] }}>
+                        <Image source={require('./../../assets/bluedot.png')} style={{ height: 18, width: 18 }} />
+                    </Marker> : <></>}
             </MapView>
         </View >
     );
